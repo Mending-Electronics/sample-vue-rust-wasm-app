@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparateur de Crédits Immobilier</title>
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/5.3.8/flatly/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.13.1/font/bootstrap-icons.min.css">
+    
+    <style>
+        .card-best-monthly {
+            border: 3px solid #28a745 !important;
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.3);
+        }
+        .card-best-total {
+            border: 3px solid #17a2b8 !important;
+            box-shadow: 0 0 15px rgba(23, 162, 184, 0.3);
+        }
+        .badge-best {
+            font-size: 0.9rem;
+            padding: 0.5rem 0.8rem;
+        }
+        .main-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .currency {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header class="main-header">
+            <div class="container">
+                <h1 class="text-center">
+                    <i class="bi bi-calculator me-2"></i>
+                    Comparateur de Crédits Immobilier
+                </h1>
+                <p class="text-center mt-2 mb-0">Comparez plusieurs offres de crédit immobilier</p>
+            </div>
+        </header>
+
+        <div class="container">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <button class="btn btn-primary btn-lg" @click="addMortgage">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Ajouter une offre
+                    </button>
+                </div>
+            </div>
+
+            <div class="row" v-if="mortgages.length === 0">
+                <div class="col-12">
+                    <div class="alert alert-info text-center">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Ajoutez au moins une offre de crédit pour commencer la comparaison
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4" v-for="(mortgage, index) in mortgages" :key="index">
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100" :class="getCardClasses(index)">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-bank me-2"></i>
+                                Offre #{{ index + 1 }}
+                            </h5>
+                            <button class="btn btn-sm btn-outline-danger" @click="removeMortgage(index)" :disabled="mortgages.length === 1">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Montant du prêt (€)</label>
+                                <input type="number" class="form-control" v-model.number="mortgage.principal" min="0" step="1000">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Taux annuel (%)</label>
+                                <input type="number" class="form-control" v-model.number="mortgage.annual_rate" min="0" step="0.01">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Durée (années)</label>
+                                <input type="number" class="form-control" v-model.number="mortgage.years" min="1" max="40">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Taux d'assurance (%) - Optionnel</label>
+                                <input type="number" class="form-control" v-model.number="mortgage.insurance_rate" min="0" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-4" v-if="mortgages.length > 0">
+                <div class="col-12">
+                    <button class="btn btn-success btn-lg w-100" @click="calculate" :disabled="isCalculating">
+                        <i class="bi bi-calculator me-2"></i>
+                        <span v-if="isCalculating">Calcul en cours...</span>
+                        <span v-else>Comparer les offres</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="row" v-if="results.length > 0">
+                <div class="col-12 mb-4">
+                    <h3 class="text-center mb-4">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Résultats de la comparaison
+                    </h3>
+                </div>
+                
+                <div class="col-md-6 col-lg-4 mb-3" v-for="(result, index) in results" :key="index">
+                    <div class="card h-100" :class="getCardClasses(index)">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-receipt me-2"></i>
+                                Offre #{{ index + 1 }}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div v-if="comparison.best_monthly === index" class="alert alert-success mb-3">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Meilleure mensualité
+                            </div>
+                            <div v-if="comparison.best_total === index" class="alert alert-info mb-3">
+                                <i class="bi bi-trophy me-2"></i>
+                                Meilleur coût total
+                            </div>
+                            
+                            <table class="table table-sm">
+                                <tr>
+                                    <td>Mensualité:</td>
+                                    <td class="text-end currency">{{ formatCurrency(result.monthly_payment) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Coût total:</td>
+                                    <td class="text-end currency">{{ formatCurrency(result.total_payment) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Intérêts totaux:</td>
+                                    <td class="text-end currency">{{ formatCurrency(result.total_interest) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Assurance totale:</td>
+                                    <td class="text-end currency">{{ formatCurrency(result.total_insurance) }}</td>
+                                </tr>
+                                <tr class="table-active">
+                                    <td><strong>Taux effectif:</strong></td>
+                                    <td class="text-end"><strong>{{ result.effective_rate.toFixed(2) }}%</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center mt-5 mb-3 text-muted">
+            <small>Application Rust + WASM + Vue.js</small>
+        </footer>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.bundle.min.js"></script>
+    <!-- Vue.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.5.44/vue.global.min.js"></script>
+    <!-- WASM Module -->
+    <script type="module">
+        import init, { compare_mortgages_json } from './pkg/mortgage_calculator.js';
+        
+        await init();
+        
+        const { createApp } = Vue;
+        
+        createApp({
+            data() {
+                return {
+                    mortgages: [
+                        {
+                            principal: 200000,
+                            annual_rate: 3.5,
+                            years: 20,
+                            insurance_rate: 0.36
+                        }
+                    ],
+                    results: [],
+                    comparison: null,
+                    isCalculating: false
+                };
+            },
+            methods: {
+                addMortgage() {
+                    this.mortgages.push({
+                        principal: 200000,
+                        annual_rate: 3.5,
+                        years: 20,
+                        insurance_rate: 0.36
+                    });
+                },
+                removeMortgage(index) {
+                    if (this.mortgages.length > 1) {
+                        this.mortgages.splice(index, 1);
+                        this.results = [];
+                        this.comparison = null;
+                    }
+                },
+                async calculate() {
+                    this.isCalculating = true;
+                    
+                    try {
+                        const requestBody = JSON.stringify({ mortgages: this.mortgages });
+                        console.log('Request body:', requestBody);
+                        
+                        const resultJson = compare_mortgages_json(requestBody);
+                        console.log('Result from WASM:', resultJson);
+                        
+                        const comparison = JSON.parse(resultJson);
+                        
+                        this.results = comparison.results;
+                        this.comparison = comparison;
+                    } catch (error) {
+                        console.error('Erreur de calcul:', error);
+                        console.error('Error stack:', error.stack);
+                        alert('Erreur lors du calcul: ' + (error.message || error));
+                    } finally {
+                        this.isCalculating = false;
+                    }
+                },
+                formatCurrency(value) {
+                    return new Intl.NumberFormat('fr-FR', {
+                        style: 'currency',
+                        currency: 'EUR',
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }).format(value);
+                },
+                getCardClasses(index) {
+                    const classes = [];
+                    if (this.comparison && this.comparison.best_monthly === index) {
+                        classes.push('card-best-monthly');
+                    }
+                    if (this.comparison && this.comparison.best_total === index) {
+                        classes.push('card-best-total');
+                    }
+                    return classes.join(' ');
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
