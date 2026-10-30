@@ -65,8 +65,8 @@
                 </div>
             </div>
 
-            <div class="row mb-4" v-for="(mortgage, index) in mortgages" :key="index">
-                <div class="col-md-6 col-lg-4 mb-3">
+            <div class="row mb-4" >
+                <div class="col-md-6 col-lg-4 mb-3" v-for="(mortgage, index) in mortgages" :key="index">
                     <div class="card h-100" :class="getCardClasses(index)">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">
