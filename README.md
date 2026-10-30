@@ -6,7 +6,7 @@ Application web locale pour comparer les crédits immobiliers avec une architect
 ![VueJS](https://img.shields.io/badge/VueJS-42b883?logo=vuedotjs&logoColor=white)
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-7952B3?logo=bootstrap&logoColor=white)
 ![: Wasm](https://img.shields.io/badge/-Wasm-02569B?logo=webassembly&logoColor=white)
-![Rust](https://img.shields.io/badge/Rust-#EF4A00?logo=rust&logoColor=white)
+![Rust](https://img.shields.io/badge/Rust-ef4A00?logo=rust&logoColor=white)
 
 
 ## Architecture
